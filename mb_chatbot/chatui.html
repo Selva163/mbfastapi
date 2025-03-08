@@ -4,35 +4,54 @@
     <title>Chat with API</title>
     <script src="https://res.cdn.office.net/teams-js/2.18.1/js/MicrosoftTeams.min.js"></script>
     <script>
-        // Initialize Teams SDK
-        microsoftTeams.app.initialize().then(() => {
-            microsoftTeams.authentication.getAuthToken().then(token => {
-                microsoftTeams.app.getContext().then(context => {
-                    document.getElementById("email").value = context.user.email;
-                });
-            }).catch(err => console.error("Auth Token Error:", err));
+        document.addEventListener("DOMContentLoaded", function () {
+            // Ensure Teams SDK is available before using it
+            if (typeof microsoftTeams !== "undefined") {
+                microsoftTeams.app.initialize().then(() => {
+                    console.log("Teams SDK initialized");
+
+                    microsoftTeams.app.getContext().then(context => {
+                        console.log("User Context:", context);
+                        
+                        if (context?.user?.email) {
+                            document.getElementById("email").value = context.user.email;
+                        } else {
+                            document.getElementById("email").value = "Email not available";
+                        }
+                    }).catch(err => console.error("Context Error:", err));
+                }).catch(err => console.error("SDK Init Error:", err));
+            } else {
+                console.error("Microsoft Teams SDK not found");
+            }
         });
 
         async function sendMessage() {
             const email = document.getElementById("email").value;
             const userInput = document.getElementById("userInput").value;
-            const apiurl = "https://mbfastapi-production.up.railway.app/chatbot?email=" + email + "&query=" + userInput;
+            const apiurl = `https://mbfastapi-production.up.railway.app/chatbot?email=${encodeURIComponent(email)}&query=${encodeURIComponent(userInput)}`;
 
-            const response = await fetch(apiurl, {
-                method: "GET"
-            });
+            try {
+                const response = await fetch(apiurl, { method: "GET" });
 
-            const data = await response.text();
-            document.getElementById("response").innerHTML = data;
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+
+                const data = await response.text();
+                document.getElementById("response").innerHTML = data;
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                document.getElementById("response").innerHTML = "Error fetching response";
+            }
         }
     </script>
 </head>
 <body>
     <h2>Ask a Question</h2>
-    
+
     <label>Email (auto-filled):</label>
-    <input type="email" id="email" readonly><br><br>
-    
+    <input type="text" id="email" readonly><br><br>
+
     <label>Query:</label>
     <input type="text" id="userInput" placeholder="Type your question"><br><br>
 
