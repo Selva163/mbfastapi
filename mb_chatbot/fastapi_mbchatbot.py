@@ -8,10 +8,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from openai import OpenAI
 import os
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 openai_api_key = os.getenv("OPENAI_API_KEY", "default_secret")
 client = OpenAI(api_key=openai_api_key)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000", "https://teams.microsoft.com"],  # Update with your frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Load metadata
 def load_metadata(file_path):
@@ -164,6 +174,11 @@ def execute_chart_code(chart_code, df):
 #     plt.close()
 
 #     return f"data:image/png;base64,{img_base64}"
+
+@app.get("/ui", response_class=HTMLResponse)
+async def serve_ui():
+    with open("mb_chatbot/chatui.html", "r") as f:
+        return f.read()
 
 @app.get("/chatbot", response_class=HTMLResponse)
 async def chatbot_endpoint(email: str = Query(...), query: str = Query(...)):
