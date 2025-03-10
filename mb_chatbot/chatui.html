@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Chat with API</title>
-    <script src="https://res.cdn.office.net/teams-js/2.34.0/js/MicrosoftTeams.min.js" integrity="sha384-brW9AazbKR2dYw2DucGgWCCcmrm2oBFV4HQidyuyZRI/TnAkmOOnTARSTdps3Hwt" crossorigin="anonymous"></script>
+    <script src="https://res.cdn.office.net/teams-js/2.34.0/js/MicrosoftTeams.min.js"
+        integrity="sha384-brW9AazbKR2dYw2DucGgWCCcmrm2oBFV4HQidyuyZRI/TnAkmOOnTARSTdps3Hwt"
+        crossorigin="anonymous"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // Ensure Teams SDK is available before using it
@@ -12,11 +15,10 @@
 
                     microsoftTeams.app.getContext().then(context => {
                         console.log("User Context:", context);
-                        
-                        if (context?.user?.email) {
-                            document.getElementById("email").value = context.user.email;
-                        } else {
-                            document.getElementById("email").value = "Email not available";
+
+                        const emailElement = document.getElementById("email");
+                        if (emailElement) {
+                            emailElement.value = context?.user?.email || "Email not available";
                         }
                     }).catch(err => console.error("Context Error:", err));
                 }).catch(err => console.error("SDK Init Error:", err));
@@ -26,12 +28,29 @@
         });
 
         async function sendMessage() {
-            const email = document.getElementById("email").value;
-            const userInput = document.getElementById("userInput").value;
+            const emailElement = document.getElementById("email");
+            const email = emailElement ? emailElement.value : "Email not available";
+
+            const userInputElement = document.getElementById("user-input");
+            if (!userInputElement) {
+                console.error("User input field not found");
+                return;
+            }
+            const userInput = userInputElement.value.trim();
+
+            if (!userInput) {
+                console.warn("User input is empty");
+                return;
+            }
+
             const apiurl = `https://mbfastapi-production.up.railway.app/chatbot?email=${encodeURIComponent(email)}&query=${encodeURIComponent(userInput)}`;
 
             try {
+                document.getElementById("loading").style.display = "block";
+                
                 const response = await fetch(apiurl, { method: "GET" });
+
+                document.getElementById("loading").style.display = "none";
 
                 if (!response.ok) {
                     throw new Error(`API Error: ${response.statusText}`);
@@ -39,23 +58,185 @@
 
                 const data = await response.text();
                 document.getElementById("response").innerHTML = data;
+                userInputElement.value = ""; // Clear input after sending
             } catch (error) {
                 console.error("Fetch Error:", error);
                 document.getElementById("response").innerHTML = "Error fetching response";
             }
         }
     </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .query {
+            cursor: pointer;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .add-thread {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #159f48;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .search-container {
+            scrollbar-width: thin;
+            scrollbar-color: rgb(242, 242, 242) rgb(255, 255, 255);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: calc(100% - 250px);
+        }
+
+        .search-bar-container {
+            position: absolute;
+            width: 90%;
+            background: white;
+            padding: 10px;
+            display: flex;
+            margin-bottom: 20px;
+            justify-content: center;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .search-bar {
+            width: 80%;
+            padding: 16px;
+            border: 1px solid #ccc;
+            border-radius: 50px;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .send-button {
+            padding: 10px 15px;
+            background: #159f48;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .analysis-container {
+            margin-top: 30px;
+            flex: 1;
+            display: flex;
+            position: relative;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .chat-container {
+            width: 80%;
+            height: 100vh;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-box {
+            margin-bottom: 100px;
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            padding: 8px;
+            margin: 5px;
+            border-radius: 5px;
+            max-width: 75%;
+        }
+
+        .user-message {
+            background: #159f48;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .bot-message {
+            padding: 0 30px;
+            border: 1px solid #e1e1e1;
+            background: #f0f0f0;
+            align-self: flex-start;
+        }
+
+        #loading {
+            width: 34px;
+            height: auto;
+            top: -50px;
+            display: none;
+            position: absolute;
+        }
+    </style>
+
 </head>
+
 <body>
-    <h2>Ask a Question</h2>
-
-    <label>Email (auto-filled):</label>
-    <input type="text" id="email" readonly><br><br>
-
-    <label>Query:</label>
-    <input type="text" id="userInput" placeholder="Type your question"><br><br>
-
-    <button onclick="sendMessage()">Send</button>
-    <p>Response: <span id="response"></span></p>
+    <div class="sidebar">
+        <h3>Threads</h3>
+        <button class="add-thread">Add Thread</button>
+        <div class="query">Question A</div>
+        <div class="query">Question B</div>
+        <div class="query">Question C</div>
+        <div class="query">Question D</div>
+    </div>
+    <div class="search-container">
+        <div class="analysis-container">
+            <div class="chat-container">
+                <div class="chat-box" id="chat-box">
+                    <h3>Hello Selva Saravanakumar!</h3>
+                    <input type="hidden" id="email">
+                    <div id="response"></div>
+                </div>
+            </div>
+        </div>
+        <div class="search-bar-container">
+            <img id="loading" src="loading-gif-png-5.webp">
+            <input type="text" class="search-bar" id="user-input" placeholder="Type a message...">
+            <button class="send-button" onclick="sendMessage()">Send ➤</button>
+        </div>
+    </div>
 </body>
+
 </html>
